@@ -1,0 +1,18 @@
+{
+  "name": "gameserver",
+  "version": "1.0.0",
+  "description": "server for game",
+  "main": "index.js",
+  "dependencies": {
+    "epress": "^0.0.1-security",
+    "http": "^0.0.0",
+    "pixi-viewport": "^4.4.1",
+    "socketio": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Paul Muller",
+  "license": "ISC"
+}
