@@ -4,24 +4,41 @@ const io = require('socket.io')(http)
 const config = require('./config.json')
 const islands = require('./islands.json')
 
-let players = {}
+class Player{
+    constructor(address, socketId){
+        this.address = address
+        this.socketId = socketId
+        this.x = 0
+        this.y = 0
+        this.rotation = 0
+        this.speed = 0
+        this.speedCoeficient = 0.6
+        this.turnSpeed = 0
+        this.viewRadius = 500
+    }
 
-let newPlayerTemplate = {//TODO: change to optimized arrays
-    name: "Incognito",
-    ship: "boat_lvl1",
-    x:0,
-    y:0, 
-    rotation: 0, 
-    speed: 0,
-    turnSpeed: 0,
-    viewRadius: 500
+    move() {
+        this.x += Math.cos(this.rotation) * this.speed * this.speedCoeficient
+        this.y += Math.sin(this.rotation) * this.speed * this.speedCoeficient
+        this.rotation += this.turnSpeed * this.speed * this.speedCoeficient
+    }
 }
 
-setInterval(() => {
-    Object.keys(players).forEach(socketId => {
-        move(players[socketId], 0.2);
-    });
-}, 10);
+const main = () => {
+    setInterval(() => {
+        
+    }, 33);
+
+
+
+}
+
+main()
+
+
+
+
+
 
 io.on('connection', client => { 
     console.log("player connected to game server!");
@@ -98,10 +115,6 @@ const getVisiblePlayers = (clientId) => {
 }
 
 function move(object, speedCoeficient) {
-    // if (object.x >= config.worldSize || object.x <= -config.worldSize) object.x = -object.x;
-    // if (object.y >= config.worldSize || object.y <= -config.worldSize) object.y = -object.y;
-    // //TODO: correct distance on world edges!!!
-
 	object.x = +( object.x + object.speed * speedCoeficient * Math.cos(object.rotation) ).toFixed(5);
 	object.y = +( object.y + object.speed * speedCoeficient * Math.sin(object.rotation) ).toFixed(5);
     object.rotation = +( object.rotation + object.turnSpeed * object.speed * speedCoeficient ).toFixed(5);
