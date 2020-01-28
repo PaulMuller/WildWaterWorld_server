@@ -2,10 +2,16 @@ const app = require('express')()
 const http = require('http').createServer(app)
 const io = require('socket.io')(http)
 const config = require('./config.json')
-const islands = require('./islands.json')
+
 
 class Player{
+    static connectedPlayers = []
+
     constructor(address, socketId){
+        //...
+        //find in db and load or create new in db
+        //...
+
         this.address = address
         this.socketId = socketId
         this.x = 0
@@ -15,6 +21,16 @@ class Player{
         this.speedCoeficient = 0.6
         this.turnSpeed = 0
         this.viewRadius = 500
+        this.inGame = false
+
+        connectedPlayers.push(this)
+        console.log("client connected")
+    }
+
+    disconnect(){
+        let index = connectedPlayers.indexOf(this)
+        if (index !== -1) connectedPlayers.splice(index, 1)
+        console.log(`client disconnected`)
     }
 
     move() {
@@ -22,107 +38,54 @@ class Player{
         this.y += Math.sin(this.rotation) * this.speed * this.speedCoeficient
         this.rotation += this.turnSpeed * this.speed * this.speedCoeficient
     }
+
+    getVisiblePlayers(){
+        let visiblePlayers = []
+
+        Player.connectedPlayers.forEach( player => {
+            if (this.socketId == player.socketId) return
+            let distance = Math.sqrt((player.x - this.x)**2 + (player.y - this.y)**2)
+            if (distance <= this.viewRadius) visiblePlayers.push(player)
+        })
+    
+        return visiblePlayers || []
+    }
+
+    static moveAll(){
+        this.connectedPlayers.forEach( player => player.move())
+    }
+
 }
-
-const main = () => {
-    setInterval(() => {
-        
-    }, 33);
-
-
-
-}
-
-main()
-
-
 
 
 
 
 io.on('connection', client => { 
-    console.log("player connected to game server!");
+    const currentPlayer = new Player(`TUFEL9h9zN8KNMwRgcTxd9jDXUU3E8Kwbx`, client.id)//player initialization on start (load from db or register new)
 
-    players[client.id] = Object.assign({},newPlayerTemplate);
+    let playerState = [
+        currentPlayer.x,
+        currentPlayer.y,
+        currentPlayer.rotation,
+        currentPlayer.viewRadius,
+    ].map( i => ~~(i * 1e4))
 
-    setInterval(() => {
-        client.emit(2, {//playerUpdate
-            player :players[client.id],
-            otherVisiblePlayers: getVisiblePlayers(client.id),
-            islands: islands
-        });
-    }, 33);
-
-    client.on(1, (data)=>{//ping
-        client.emit(1, data);
-    });
-
-    client.on("ArrowUp_pressed", () => {
-        if (players[client.id].speed < 3)
-            players[client.id].speed ++;
-    });
-    client.on("ArrowDown_pressed", () => {
-        if (players[client.id].speed >-1)
-            players[client.id].speed --;
-    });
-    client.on("ArrowRight_pressed", () => {
-        players[client.id].turnSpeed = 0.02; 
-    });
-    client.on("ArrowLeft_pressed", () => {
-        players[client.id].turnSpeed = -0.02; 
-    });
+    client.on( 1, ping => client.emit(1, [ping, ...playerState]))
+    client.on('AUP', () => currentPlayer.speed < 3 && currentPlayer.speed++)
+    client.on('ADP', () => currentPlayer.speed > -1 && currentPlayer.speed--)
+    client.on('ARP', () => currentPlayer.turnSpeed = 0.02)
+    client.on('ALP', () => currentPlayer.turnSpeed = -0.02)
+    client.on('ARR', () => currentPlayer.turnSpeed = 0)
+    client.on('ALR', () => currentPlayer.turnSpeed = 0) 
+    client.on("disconnect", () => currentPlayer.disconnect())
     
-    client.on("ArrowUp_released", () => {
-        // player.speed = 0;
-    });
-    client.on("ArrowDown_released", () => {
-        // player.speed = 0;
-    });
-    client.on("ArrowRight_released", () => {
-        players[client.id].turnSpeed = 0; 
-    });
-    client.on("ArrowLeft_released", () => {
-        players[client.id].turnSpeed = 0; 
-    });
-
-
-    client.on("disconnect", () => {
-        delete players[client.id];
-        console.log("player disconnected from game server");
-    });
 });
 
-http.listen(config.port, () => {
-    console.log('Game server start at port: ', config.port);
-});
-
-const getVisiblePlayers = (clientId) => {
-    if (players[clientId] == undefined) return {};
-    let res = {};
-
-    Object.keys(players).forEach(socketId => {
-        if (clientId == socketId) return;
+(() => {
+    http.listen(config.port, () => console.log(`Game server started at port ${config.port}`))
         
-        let distance = Math.sqrt((players[socketId].x - players[clientId].x)**2 + (players[socketId].y - players[clientId].y)**2);
+    setInterval(() => {
+        Player.moveAll()
+    }, 33)
+})()
 
-        if (distance <= players[clientId].viewRadius){
-            res[socketId] = players[socketId];
-        }
-        
-    });
-
-    return res;
-}
-
-function move(object, speedCoeficient) {
-	object.x = +( object.x + object.speed * speedCoeficient * Math.cos(object.rotation) ).toFixed(5);
-	object.y = +( object.y + object.speed * speedCoeficient * Math.sin(object.rotation) ).toFixed(5);
-    object.rotation = +( object.rotation + object.turnSpeed * object.speed * speedCoeficient ).toFixed(5);
-}
-
-
-function arrayRemove(arr, value) {
-    let index = arr.indexOf(value);
-    if (index !== -1) arr.splice(index, 1);
-    return arr;
-}
