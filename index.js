@@ -7,30 +7,64 @@ const config = require('./config.json')
 class Player{
     static connectedPlayers = []
 
-    constructor(address, socketId){
-        //...
+    constructor(address, nickName, socket){
+        
         //find in db and load or create new in db
-        //...
 
         this.address = address
-        this.socketId = socketId
+        this.nickName = nickName
+        this.socketId = socket.id
         this.x = 0
         this.y = 0
         this.rotation = 0
         this.speed = 0
         this.speedCoeficient = 0.6
         this.turnSpeed = 0
-        this.viewRadius = 500
+        this.viewRadius = 1000
         this.inGame = false
+        this.updateIntervalId = setInterval(() => io.to(this.socketId).emit( 2, [...this.playerState, this.visiblePlayers]), 33)
 
-        connectedPlayers.push(this)
-        console.log("client connected")
+        Player.connectedPlayers.push(this)
+        console.log(`client connected: ${this.address.slice(0,4)}...`)
     }
 
-    disconnect(){
-        let index = connectedPlayers.indexOf(this)
-        if (index !== -1) connectedPlayers.splice(index, 1)
-        console.log(`client disconnected`)
+    get playerState(){
+        return [
+            this.x.toFixed(3),
+            this.y.toFixed(3),
+            this.rotation.toFixed(3),
+            this.viewRadius.toFixed(3)
+        ]
+    }
+
+    get visiblePlayers(){
+        let arr = []
+
+        Player.connectedPlayers.forEach( player => {
+            if (this.address === player.address) return
+            let distance = Math.sqrt((player.x - this.x)**2 + (player.y - this.y)**2)
+            if (distance <= this.viewRadius) arr.push([
+                player.x.toFixed(3),
+                player.y.toFixed(3),
+                player.rotation.toFixed(3),
+                player.nickName
+            ])
+        })
+        return arr
+    }
+
+    async disconnect(){
+        await new Promise(resolve => setTimeout(resolve, 15000))
+        if (this.inGame) return console.log(`reconnected`)
+
+        for(let i in Player.connectedPlayers){
+            if(Player.connectedPlayers[i].address === this.address){
+                Player.connectedPlayers.splice(i, 1)
+                break
+            }
+        }
+        clearInterval(this.updateIntervalId)
+        console.log(`client disconnected: ${this.address.slice(0,4)}...`)
     }
 
     move() {
@@ -39,47 +73,10 @@ class Player{
         this.rotation += this.turnSpeed * this.speed * this.speedCoeficient
     }
 
-    getVisiblePlayers(){
-        let visiblePlayers = []
-
-        Player.connectedPlayers.forEach( player => {
-            if (this.socketId == player.socketId) return
-            let distance = Math.sqrt((player.x - this.x)**2 + (player.y - this.y)**2)
-            if (distance <= this.viewRadius) visiblePlayers.push(player)
-        })
-    
-        return visiblePlayers || []
-    }
-
     static moveAll(){
-        this.connectedPlayers.forEach( player => player.move())
+        Player.connectedPlayers.forEach( player => player.move())
     }
-
 }
-
-
-
-
-io.on('connection', client => { 
-    const currentPlayer = new Player(`TUFEL9h9zN8KNMwRgcTxd9jDXUU3E8Kwbx`, client.id)//player initialization on start (load from db or register new)
-
-    let playerState = [
-        currentPlayer.x,
-        currentPlayer.y,
-        currentPlayer.rotation,
-        currentPlayer.viewRadius,
-    ].map( i => ~~(i * 1e4))
-
-    client.on( 1, ping => client.emit(1, [ping, ...playerState]))
-    client.on('AUP', () => currentPlayer.speed < 3 && currentPlayer.speed++)
-    client.on('ADP', () => currentPlayer.speed > -1 && currentPlayer.speed--)
-    client.on('ARP', () => currentPlayer.turnSpeed = 0.02)
-    client.on('ALP', () => currentPlayer.turnSpeed = -0.02)
-    client.on('ARR', () => currentPlayer.turnSpeed = 0)
-    client.on('ALR', () => currentPlayer.turnSpeed = 0) 
-    client.on("disconnect", () => currentPlayer.disconnect())
-    
-});
 
 (() => {
     http.listen(config.port, () => console.log(`Game server started at port ${config.port}`))
@@ -88,4 +85,55 @@ io.on('connection', client => {
         Player.moveAll()
     }, 33)
 })()
+
+
+io.on('connection', client => { 
+    let currentPlayer 
+
+    client.on( 'in', data => {
+        let findedPlayer = Player.connectedPlayers.filter(e => e.address === data[0])
+        if (findedPlayer.length === 1){
+            //player still in game
+            findedPlayer[0].socketId = client.id
+            findedPlayer[0].inGame = true
+            currentPlayer = findedPlayer[0]
+        }else{
+            currentPlayer = new Player(data[0], data[1].nickName, client)//player initialization on start (load from db or register new)
+            currentPlayer.inGame = true
+        }
+    })
+
+    client.on( 1, ping => client.emit(1, ping))
+    client.on( 3, e => {
+        if (!currentPlayer || !currentPlayer.inGame) return
+        switch (e[0]) {
+            case 38:
+                currentPlayer.speed < 3 && e[1] === 'keydown' ?  currentPlayer.speed++ : void(0)
+                break
+            case 40:
+                currentPlayer.speed > -1 && e[1] === 'keydown' ?  currentPlayer.speed-- : void(0)
+                break
+            case 39:
+                currentPlayer.turnSpeed = e[1] === 'keydown' ? 0.02 : 0
+                break
+            case 37:
+                currentPlayer.turnSpeed = e[1] === 'keydown' ? -0.02 : 0
+                break
+            case 27:
+                client.emit('out')
+                currentPlayer.inGame = false
+                break
+        }
+    }) 
+    
+    client.on("disconnect", () => {
+        client.emit('out')
+        if(currentPlayer){
+            currentPlayer.inGame = false
+            currentPlayer.disconnect()
+        }
+    })
+})
+
+
 
