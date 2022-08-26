@@ -85,7 +85,7 @@ class Player{
 }
 
 module.exports.main = () => {
-    io.listen(process.env.PORT)    
+    httpsServer.listen(process.env.PORT)    
     console.log(`port:${process.env.PORT}`)
 
     setInterval(() => {
