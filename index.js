@@ -1,13 +1,13 @@
 require('dotenv').config()
 const app       = require('express')()
-const http = require('http').Server(app)
+const https = require('https').Server(app)
 
 app.use((req, res, next) => {
     console.log({req,res})
     next()
 })
 
-const io   = require('socket.io')(http, {
+const io = require('socket.io')(https, {
     cors: {
         'origin': process.env.client,
         // 'access-control-allow-origin': process.env.client,
@@ -98,7 +98,7 @@ class Player{
         response.send(`<h1>Hi there, server is UP for ${process.env.client}</h1>`);
     });
 
-    http.listen(process.env.port, () => console.log(`Game server started at port ${process.env.port}`))
+    https.listen(process.env.port, () => console.log(`Game server started at port ${process.env.port}`))
     let len = Player.connectedPlayers.length
     
     setInterval(() => {
