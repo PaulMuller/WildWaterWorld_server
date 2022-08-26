@@ -85,8 +85,13 @@ class Player{
 }
 
 (() => {
+    app.get("/", (request, response) => {
+        response.send(`<h1>Hi there, server is UP for ${process.env.client}</h1>`);
+    });
+
     http.listen(process.env.port, () => console.log(`Game server started at port ${process.env.port}`))
     let len = Player.connectedPlayers.length
+    
     setInterval(() => {
         if (len != Player.connectedPlayers.length) {len = Player.connectedPlayers.length; console.log(len, Player.connectedPlayers.length)}
         Player.moveAll()
