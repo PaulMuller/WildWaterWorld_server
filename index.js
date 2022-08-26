@@ -1,17 +1,20 @@
 require('dotenv').config()
 const app       = require('express')()
-const http      = require('http').Server(app)
-const io        = require('socket.io')(http,{
+const http = require('http').Server(app)
+
+app.use((req, res, next) => {
+    console.log({req,res})
+    next()
+})
+
+const io   = require('socket.io')(http, {
     cors: {
         'origin': process.env.client,
         // 'access-control-allow-origin': process.env.client,
         'Access-Control-Allow-Origin': '*',
-        'methods': ["GET", "POST"]
+        'methods': ['GET', 'POST']
     }}
 )
-const config    = require('./config.json')
-
-
 class Player{
     static connectedPlayers = []
 
@@ -49,15 +52,18 @@ class Player{
         let arr = []
 
         Player.connectedPlayers.forEach( player => {
-            if (this.address === player.address) return
             let distance = Math.sqrt((player.x - this.x)**2 + (player.y - this.y)**2)
-            if (distance <= this.viewRadius) arr.push([
+            if (distance > this.viewRadius) return
+            if (this.address === player.address) return
+            
+            arr.push([
                 player.x.toFixed(3),
                 player.y.toFixed(3),
                 player.rotation.toFixed(3),
                 player.nickName
             ])
         })
+
         return arr
     }
 
