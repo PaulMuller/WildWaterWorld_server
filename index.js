@@ -2,7 +2,7 @@ require('dotenv').config()
 const httpsServer = require('https').createServer()
 const io = require('socket.io')(httpsServer, {
     cors: {
-        origin: 'http://localhost:3000'
+        origin: process.env.origin
     }
 })
 
@@ -85,8 +85,8 @@ class Player{
 }
 
 module.exports.main = () => {
-    io.listen(process.env.port || 5000)    
-    console.log(`port:${process.env.port || 5000}`)
+    io.listen(process.env.PORT)    
+    console.log(`port:${process.env.PORT}`)
 
     setInterval(() => {
         Player.moveAll()
