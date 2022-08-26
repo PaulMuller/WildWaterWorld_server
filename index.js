@@ -4,6 +4,7 @@ const http      = require('http').Server(app)
 const io        = require('socket.io')(http,{
     cors: {
         origin: process.env.client,
+        methods: ["GET", "POST"]
     }}
 )
 const config    = require('./config.json')
