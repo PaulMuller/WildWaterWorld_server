@@ -1,11 +1,19 @@
 {
-    "builds": [
-      { "src": "./index.js", "use": "@vercel/node" }
-    ],
-    "headers" : [
-      {"key": "origin", "value" : "https://wild-water-world-client-side.vercel.app"}
-        
-      
-    ]
-  }
-  
+	"builds": [
+		{
+			"src": "./index.js",
+			"use": "@vercel/node"
+		}
+	],
+	"headers": [
+		{
+			"source": "/(.*)",
+			"headers": [
+				{
+					"key": "origin",
+					"value": "https://wild-water-world-client-side.vercel.app"
+				}
+			]
+		}
+	]
+}
