@@ -4,7 +4,7 @@ const http      = require('http').Server(app)
 const io        = require('socket.io')(http,{
     cors: {
         'origin': process.env.client,
-        'access-control-allow-origin':process.env.client,
+        // 'access-control-allow-origin': process.env.client,
         'Access-Control-Allow-Origin': '*',
         'methods': ["GET", "POST"]
     }}
