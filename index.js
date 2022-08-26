@@ -2,7 +2,8 @@ require('dotenv').config()
 const httpsServer = require('http').createServer()
 const io = require('socket.io')(httpsServer, {
     cors: {
-        origin: process.env.origin
+        // origin: process.env.origin
+        'Access-Control-Allow-Origin': '*'
     }
 })
 
