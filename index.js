@@ -1,6 +1,11 @@
+require('dotenv').config()
 const app       = require('express')()
-const http      = require('http').createServer(app)
-const io        = require('socket.io')(http)
+const http      = require('http').Server(app)
+const io        = require('socket.io')(http,{
+    cors: {
+        origin: "http://localhost:3000",
+    }}
+)
 const config    = require('./config.json')
 
 
@@ -75,14 +80,15 @@ class Player{
     }
 
     static moveAll(){
-        Player.connectedPlayers.forEach(move)
+        Player.connectedPlayers.forEach(player => player.move())
     }
 }
 
 (() => {
-    http.listen(config.port, () => console.log(`Game server started at port ${config.port}`))
-        
+    http.listen('5000', () => console.log(`Game server started at port ${process.env.port}`))
+    let len = Player.connectedPlayers.length
     setInterval(() => {
+        if (len != Player.connectedPlayers.length) {len = Player.connectedPlayers.length; console.log(len, Player.connectedPlayers.length)}
         Player.moveAll()
     }, 33)
 })()
