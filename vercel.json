@@ -10,7 +10,8 @@
 			"source": "/(.*)",
 			"headers": [
 				{"key": "origin","value": "https://wild-water-world-client-side.vercel.app"},
-				{"key": "Access-Control-Allow-Origin", "value": "*" }	
+				{"key": "Access-Control-Allow-Origin", "value": "https://wild-water-world-client-side.vercel.app/" },
+				{"key": "Access-Control-Allow-Methods", "value": "POST, GET" }	
 			]
 		}
 	]
