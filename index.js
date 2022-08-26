@@ -1,7 +1,7 @@
-const app = require('express')()
-const http = require('http').createServer(app)
-const io = require('socket.io')(http)
-const config = require('./config.json')
+const app       = require('express')()
+const http      = require('http').createServer(app)
+const io        = require('socket.io')(http)
+const config    = require('./config.json')
 
 
 class Player{
@@ -68,13 +68,14 @@ class Player{
     }
 
     move() {
-        this.x += Math.cos(this.rotation) * this.speed * this.speedCoeficient
-        this.y += Math.sin(this.rotation) * this.speed * this.speedCoeficient
-        this.rotation += this.turnSpeed * this.speed * this.speedCoeficient
+        const speed = this.speed * this.speedCoeficient
+        this.x          += speed * Math.cos(this.rotation)
+        this.y          += speed * Math.sin(this.rotation)
+        this.rotation   += speed * this.turnSpeed
     }
 
     static moveAll(){
-        Player.connectedPlayers.forEach( player => player.move())
+        Player.connectedPlayers.forEach(move)
     }
 }
 
@@ -126,7 +127,7 @@ io.on('connection', client => {
         }
     }) 
     
-    client.on("disconnect", () => {
+    client.on('disconnect', () => {
         client.emit('out')
         if(currentPlayer){
             currentPlayer.inGame = false
