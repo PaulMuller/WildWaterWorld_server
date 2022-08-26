@@ -2,7 +2,7 @@ require('dotenv').config()
 const httpsServer = require('https').createServer()
 const io = require('socket.io')(httpsServer, {
     cors: {
-        origin: 'https://localhost:3000'
+        origin: 'http://localhost:3000'
     }
 })
 
