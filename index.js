@@ -1,20 +1,11 @@
 require('dotenv').config()
-const app       = require('express')()
-const https = require('https').Server(app)
-
-app.use((req, res, next) => {
-    console.log({req,res})
-    next()
+const httpServer = require('http').createServer()
+const io = require('socket.io')(httpServer, {
+    cors: {
+        origin: process.env.client || 'http://localhost:3000'
+    }
 })
 
-const io = require('socket.io')(https, {
-    cors: {
-        'origin': process.env.client,
-        // 'access-control-allow-origin': process.env.client,
-        // 'Access-Control-Allow-Origin': '*',
-        'methods': ['GET', 'POST']
-    }}
-)
 class Player{
     static connectedPlayers = []
 
@@ -93,19 +84,16 @@ class Player{
     }
 }
 
-(() => {
-    app.get("/", (request, response) => {
-        response.send(`<h1>Hi there, server is UP for ${process.env.client}</h1>`);
-    });
+module.exports.main = () => {
+    io.listen(process.env.port || 5000)    
+    console.log(`port:${process.env.port || 5000}`)
 
-    https.listen(process.env.port, () => console.log(`Game server started at port ${process.env.port}`))
-    let len = Player.connectedPlayers.length
-    
     setInterval(() => {
-        if (len != Player.connectedPlayers.length) {len = Player.connectedPlayers.length; console.log(len, Player.connectedPlayers.length)}
         Player.moveAll()
     }, 33)
-})()
+}
+
+module.exports.main()
 
 
 io.on('connection', client => { 
